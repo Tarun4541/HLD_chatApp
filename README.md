@@ -54,7 +54,7 @@ Pre-built images are available on Docker Hub:
 | Client 2  | `tarun309/hld-chat-client2:latest`  |
 
 ### 🚀 Running Locally with Docker Compose
-#Clone this repository
+- #Clone this repository
   - git clone https://github.com/Tarun4541/HLD_chatApp.git
   - cd HLD_chatApp
 - #Make sure your .env file exists 
