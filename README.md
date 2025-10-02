@@ -7,24 +7,24 @@ The app uses Docker for containerization and supports horizontal scaling with mu
 
 ```mermaid
 graph TD
-  A[Browser / Client UI] -->|HTTP(S)/WS| C1[Client :3000]
-  A -->|HTTP(S)/WS| C2[Client_2 :3001]
+  A["Browser / Client UI"] -->|"HTTP/WS"| C1["Client :3000"]
+  A -->|"HTTP/WS"| C2["Client_2 :3001"]
 
-  C1 -->|WebSocket + REST| BE1[Backend :8081]
-  C2 -->|WebSocket + REST| BE2[Backend2 :8084]
+  C1 -->|"WebSocket + REST"| BE1["Backend :8081"]
+  C2 -->|"WebSocket + REST"| BE2["Backend2 :8084"]
 
-  BE1 <--> |Pub/Sub| BE2
-  BE1 -->|Auth Requests| AUTH[Auth Backend :8080]
-  BE2 -->|Auth Requests| AUTH
+  BE1 <-->|"Pub/Sub"| BE2
+  BE1 -->|"Auth Requests"| AUTH["Auth Backend :8080"]
+  BE2 -->|"Auth Requests"| AUTH
 
-  BE1 -->|DB| MONGO[(MongoDB Atlas)]
-  BE2 -->|DB| MONGO
+  BE1 -->|"DB"| MONGO["MongoDB Atlas"]
+  BE2 -->|"DB"| MONGO
 
-  BE1 -->|Pub/Sub Channels| REDIS[(Redis / Valkey)]
-  BE2 -->|Pub/Sub Channels| REDIS
+  BE1 -->|"Pub/Sub Channels"| REDIS["Redis / Valkey"]
+  BE2 -->|"Pub/Sub Channels"| REDIS
 
-  AUTH -->|Verify / Issue JWT| BE1
-  AUTH -->|Verify / Issue JWT| BE2
+  AUTH -->|"Verify / Issue JWT"| BE1
+  AUTH -->|"Verify / Issue JWT"| BE2
 ```
 
 ### Message Flow
