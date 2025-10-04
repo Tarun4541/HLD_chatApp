@@ -45,6 +45,11 @@ graph TD
   BE1 <-->|"WS events"| C1
   BE2 <-->|"WS events"| C2
 ```
+> Notes  
+> - **JWT is issued by Auth** and stored as **HttpOnly Secure cookie**.  
+> - **API Gateway** verifies JWT (via **Auth** or using a **cached public key**) and routes to **BE1 / BE2**.  
+> - **BE1/BE2** exchange chat events via **Redis Pub/Sub** and persist to **MongoDB Atlas**.  
+> - WebSocket handshakes include cookies, so the gateway/backends can validate the session.
 
 ### 📩 Message Flow
 - 1.User connects from the frontend (React/Next.js) to backend over WebSocket & REST.
@@ -92,3 +97,34 @@ Pre-built images are available on Docker Hub:
   - JWT authentication handled by a dedicated Auth service.
   - Future enhancement: TLS termination with Nginx/Traefik + Let’s Encrypt.
 
+### SequenceDiagram
+```mermaid
+sequenceDiagram
+  participant C1 as Client
+  participant GW as API Gateway
+  participant AUTH as Auth Service
+  participant BE1 as Backend 1
+  participant BE2 as Backend 2
+  participant REDIS as Redis/Valkey
+  participant DB as MongoDB Atlas
+
+  Note over C1,AUTH: Login
+  C1->>GW: POST /auth/login (email, password)
+  GW->>AUTH: /auth/login
+  AUTH-->>GW: 200 {user} + Set-Cookie: jwt=...
+  GW-->>C1: 200 + Set-Cookie
+
+  Note over C1,BE1: WebSocket connect
+  C1->>GW: WS handshake (Cookie: jwt=...)
+  GW->>AUTH: verify JWT (or verify locally via public key)
+  AUTH-->>GW: valid
+  GW->>BE1: route WS connection
+
+  Note over C1,DB: Send message
+  C1->>GW: POST /messages {to, text} (cookie attached)
+  GW->>BE1: /messages
+  BE1->>DB: insert message
+  BE1->>REDIS: publish chat event
+  REDIS-->>BE2: broadcast
+  BE2-->>C2: emit "chat:msg"
+```
