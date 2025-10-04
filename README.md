@@ -7,24 +7,43 @@ The app uses Docker for containerization and supports horizontal scaling with mu
 
 ```mermaid
 graph TD
-  A["Browser / Client UI"] -->|"HTTP/WS"| C1["Client :3000"]
-  A -->|"HTTP/WS"| C2["Client_2 :3001"]
+  subgraph Clients
+    C1["Client :3000"]
+    C2["Client_2 :3001"]
+  end
 
-  C1 -->|"WebSocket + REST"| BE1["Backend :8081"]
-  C2 -->|"WebSocket + REST"| BE2["Backend2 :8084"]
+  GW["API Gateway"]
+  AUTH["Auth Service :8080"]
+  BE1["Chat Backend :8081"]
+  BE2["Chat Backend 2 :8084"]
+  REDIS["Redis / Valkey (Pub/Sub)"]
+  MONGO["MongoDB Atlas"]
 
-  BE1 <-->|"Pub/Sub"| BE2
-  BE1 -->|"Auth Requests"| AUTH["Auth Backend :8080"]
-  BE2 -->|"Auth Requests"| AUTH
+  %% Auth flow
+  C1 -->|"Login / Sign up (REST)"| GW
+  C2 -->|"Login / Sign up (REST)"| GW
+  GW -->|"route auth/*"| AUTH
+  AUTH -->|"Set-Cookie: JWT (HttpOnly, Secure, SameSite=Lax)"| C1
+  AUTH -->|"Set-Cookie: JWT (HttpOnly, Secure, SameSite=Lax)"| C2
 
-  BE1 -->|"DB"| MONGO["MongoDB Atlas"]
-  BE2 -->|"DB"| MONGO
+  %% App traffic (REST + WebSocket) with cookie attached
+  C1 -->|"REST + WS handshake (JWT cookie)"| GW
+  C2 -->|"REST + WS handshake (JWT cookie)"| GW
 
-  BE1 -->|"Pub/Sub Channels"| REDIS["Redis / Valkey"]
-  BE2 -->|"Pub/Sub Channels"| REDIS
+  %% Gateway verifies token (via Auth or cached/public key) and routes
+  GW -->|"verify JWT"| AUTH
+  GW -->|"route /api, /ws"| BE1
+  GW -. load-balance .-> BE2
 
-  AUTH -->|"Verify / Issue JWT"| BE1
-  AUTH -->|"Verify / Issue JWT"| BE2
+  %% Realtime + persistence
+  BE1 <-->|"Pub/Sub"| REDIS
+  BE2 <-->|"Pub/Sub"| REDIS
+  BE1 -->|"Persist"| MONGO
+  BE2 -->|"Persist"| MONGO
+
+  %% WS events to clients
+  BE1 <-->|"WS events"| C1
+  BE2 <-->|"WS events"| C2
 ```
 
 ### 📩 Message Flow
